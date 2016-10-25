@@ -988,20 +988,51 @@
          * uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE,
          * uiGridExporterConstants.SELECTED
          */
-        pdfExport: function (grid, rowTypes, colTypes) {
-          var self = this;
-          this.loadAllDataIfNeeded(grid, rowTypes, colTypes).then(function () {
-            var exportColumnHeaders = self.getColumnHeaders(grid, colTypes);
-            var exportData = self.getData(grid, rowTypes, colTypes);
-            var docDefinition = self.prepareAsPdf(grid, exportColumnHeaders, exportData);
+         pdfExport: function (grid, rowTypes, colTypes) {
+               var self = this;
 
-            if (self.isIE() || navigator.appVersion.indexOf("Edge") !== -1) {
-              self.downloadPDF(grid.options.exporterPdfFilename, docDefinition);
-            } else {
-              pdfMake.createPdf(docDefinition).open();
-            }
-          });
-        },
+               var exportData = self.getGridRows(grid, rowTypes, colTypes);
+
+               var docContent = [];
+
+               $(exportData).each(function () {
+                   docContent.push(
+                       {
+                           table: {
+                               headerRows: 1,
+                               widths: [70, 80, 150, 180],
+                               body: [
+                                 [{ text: 'Job Raised', bold: true, fillColor: 'lightgray' }, { text: 'Job Number', bold: true, fillColor: 'lightgray' }, { text: 'Client', bold: true, fillColor: 'lightgray' }, { text: 'Job Title', bold: true, fillColor: 'lightgray' }],
+                                 [formattedDateTime(this.entity.JobDate,false), this.entity.JobNumber, this.entity.Client, this.entity.JobTitle],
+                               ]
+                           }
+                       });
+                   var subGridContentBody = [];
+                   subGridContentBody.push([{ text: 'Defect', bold: true, fillColor: 'lightgray' }, { text: 'Vendor', bold: true, fillColor: 'lightgray' }, { text: 'Status', bold: true, fillColor: 'lightgray' }, { text: 'Sign off', bold: true, fillColor: 'lightgray' }]);
+                   $(this.entity.Defects).each(function () {
+                       subGridContentBody.push([this.DefectName, this.DefectVendor, this.DefectStatus, '']);
+                   });
+                   docContent.push({
+                       table: {
+                           headerRows: 1,
+                           widths: [159, 150, 50, 121],
+                           body: subGridContentBody
+                       }
+                   });
+                   docContent.push({ text: '', margin: 15 });
+               });
+
+               var docDefinition = {
+                   content:  docContent
+               }
+
+
+               if (self.isIE()) {
+                   self.downloadPDF(grid.options.exporterPdfFilename, docDefinition);
+               } else {
+                   pdfMake.createPdf(docDefinition).open();
+               }
+           },
 
 
         /**
